@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <style>
+        body {
+            background-color: #2b1821;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-box {
+            background-color: #3a1f2b;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .login-box button {
+            background-color: #8c0d05;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .login-box button:hover {
+            background-color: #a31209;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Login</h2>
+        <input type="email" id="email" placeholder="Email"><br>
+        <input type="password" id="senha" placeholder="Senha"><br>
+        <button onclick="login()">Entrar</button>
+    </div>
+
+    <script>
+        async function login() {
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, senha })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                // Salva o token no localStorage
+                localStorage.setItem('token', data.token);
+                // Redireciona para a página de estoque
+                window.location.href = '/estoque.html';
+            } else {
+                alert('Login falhou!');
+            }
+        }
+    </script>
+</body>
+</html>

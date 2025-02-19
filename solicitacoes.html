@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solicitações</title>
+    <style>
+        body {
+            background-color: #2b1821;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            background-color: #640b03;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header .logo {
+            height: 50px;
+        }
+        .header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header .buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .header .buttons button {
+            background-color: #8c0d05;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .header .buttons button:hover {
+            background-color: #a31209;
+        }
+        .content {
+            padding: 20px;
+        }
+        .solicitacao {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #3a1f2b;
+        }
+        .aprovada { color: green; }
+        .negada { color: red; }
+        .pendente { color: orange; }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <div class="header">
+        <img src="logoarcade.png" alt="Logo Arcade" class="logo">
+        <div class="buttons" id="adminButtons">
+            <button onclick="window.location.href='/adicionar-produto.html'">Adicionar Produto</button>
+            <button onclick="window.location.href='/solicitacoes.html'">Ver Solicitações</button>
+        </div>
+        <div class="buttons" id="solicitanteButtons">
+            <button onclick="window.location.href='/solicitacoes-solicitante.html'">Minhas Solicitações</button>
+        </div>
+        <div class="user-info">
+            <span id="userName"></span>
+        </div>
+    </div>
+
+    <!-- Conteúdo -->
+    <div class="content">
+        <h1>Solicitações</h1>
+        <div id="solicitacoes"></div>
+    </div>
+
+    <script>
+        // Verifica se o usuário está logado
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html'; // Redireciona para o login se não estiver logado
+        }
+
+        // Decodifica o token para obter o tipo de usuário
+        const usuario = JSON.parse(atob(token.split('.')[1]));
+
+        // Mostra o nome do usuário no cabeçalho
+        document.getElementById('userName').textContent = usuario.email;
+
+        // Mostra os botões corretos com base no tipo de usuário
+        if (usuario.tipo === 'admin') {
+            document.getElementById('adminButtons').style.display = 'flex';
+            document.getElementById('solicitanteButtons').style.display = 'none';
+        } else if (usuario.tipo === 'solicitante') {
+            document.getElementById('adminButtons').style.display = 'none';
+            document.getElementById('solicitanteButtons').style.display = 'flex';
+        }
+
+        // Carrega as solicitações
+        async function carregarSolicitacoes() {
+            try {
+                const response = await fetch('/solicitacoes', {
+                    headers: { 'Authorization': token }
+                });
+                const solicitacoes = await response.json();
+
+                const lista = solicitacoes.map(solicitacao => `
+                    <div class="solicitacao">
+                        <h3>Solicitação #${solicitacao.id}</h3>
+                        <p>Produto: ${solicitacao.modelo}</p>
+                        <p>Quantidade: ${solicitacao.quantidade}</p>
+                        <p class="${solicitacao.status}">Status: ${solicitacao.status}</p>
+                        ${solicitacao.status === 'pendente' ? `
+                            <button onclick="aprovarSolicitacao(${solicitacao.id})">Aprovar</button>
+                            <button onclick="negarSolicitacao(${solicitacao.id})">Negar</button>
+                        ` : ''}
+                    </div>
+                `).join('');
+
+                document.getElementById('solicitacoes').innerHTML = lista;
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao carregar solicitações.');
+            }
+        }
+
+        // Função para aprovar solicitação
+        async function aprovarSolicitacao(id) {
+            const response = await fetch(`/solicitacoes/${id}/aprovar`, {
+                method: 'PUT',
+                headers: { 'Authorization': token }
+            });
+
+            if (response.ok) {
+                alert('Solicitação aprovada!');
+                carregarSolicitacoes();
+            } else {
+                alert('Erro ao aprovar solicitação.');
+            }
+        }
+
+        // Função para negar solicitação
+        async function negarSolicitacao(id) {
+            const response = await fetch(`/solicitacoes/${id}/negar`, {
+                method: 'PUT',
+                headers: { 'Authorization': token }
+            });
+
+            if (response.ok) {
+                alert('Solicitação negada!');
+                carregarSolicitacoes();
+            } else {
+                alert('Erro ao negar solicitação.');
+            }
+        }
+
+        // Carrega as solicitações ao abrir a página
+        carregarSolicitacoes();
+    </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Estoque</title>
+    <style>
+        body {
+            background-color: #2b1821;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            position: fixed; /* Fixa o cabeçalho */
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100; /* Garante que o cabeçalho fique acima de outros elementos */
+            background-color: #640b03;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header .logo {
+            height: 50px;
+        }
+
+        .header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header .buttons button {
+            background-color: #8c0d05;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .header .buttons button:hover {
+            background-color: #a31209;
+        }
+
+        .content {
+            padding: 80px 20px 20px; /* Adiciona padding para evitar que o conteúdo fique atrás do cabeçalho fixo */
+        }
+
+        .product-card {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #3a1f2b;
+        }
+
+        /* Estilos para a barra de pesquisa */
+        .search-box {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box input {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .search-box button {
+            background-color: #8c0d05;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Estilo para destacar o produto encontrado */
+        .product-card.destacado {
+            background-color: #8c0e0571;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="logoarcade.png" alt="Logo Arcade" class="logo">
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Pesquisar produto...">
+            <button onclick="pesquisarProduto()">Pesquisar</button>
+        </div>
+        <div class="buttons" id="adminButtons">
+            <button onclick="window.location.href='/adicionar-produto.html'">Adicionar Produto</button>
+            <button onclick="window.location.href='/solicitacoes.html'">Ver Solicitações</button>
+        </div>
+        <div class="buttons" id="solicitanteButtons">
+            <button onclick="window.location.href='/solicitacoes-solicitante.html'">Minhas Solicitações</button>
+        </div>
+        <div class="user-info">
+            <span id="userName"></span>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1>Estoque</h1>
+        <div id="produtos"></div>
+    </div>
+
+    <script>
+        function pesquisarProduto() {
+    // ... (código anterior) ...
+
+    produtos.forEach(produto => {
+        // ... (código anterior) ...
+
+        if (nomeProduto.includes(termoPesquisa)) {
+            // ... (código anterior) ...
+
+            setTimeout(() => {
+                produto.classList.remove('destacado');
+            }, 3000); // Remove o destaque após 3 segundos
+        }
+    });
+}
+        // Verifica se o usuário está logado
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html'; // Redireciona para o login se não estiver logado
+        }
+
+        // Decodifica o token para obter o tipo de usuário
+        const usuario = JSON.parse(atob(token.split('.')[1]));
+
+        // Mostra o nome do usuário no cabeçalho
+        document.getElementById('userName').textContent = usuario.email;
+
+        // Mostra os botões corretos com base no tipo de usuário
+        if (usuario.tipo === 'admin') {
+            document.getElementById('adminButtons').style.display = 'flex';
+            document.getElementById('solicitanteButtons').style.display = 'none';
+        } else if (usuario.tipo === 'solicitante') {
+            document.getElementById('adminButtons').style.display = 'none';
+            document.getElementById('solicitanteButtons').style.display = 'flex';
+        }
+
+        // Carrega os produtos
+        async function carregarProdutos() {
+            try {
+                const response = await fetch('/produtos', {
+                    headers: { 'Authorization': token }
+                });
+                const produtos = await response.json();
+
+                const lista = produtos.map(produto => `
+                    <div class="product-card">
+                        <h3>${produto.modelo}</h3>
+                        <p>Descrição: ${produto.descricao}</p>
+                        <p>PN: ${produto.pn}</p>
+                        <p>Quantidade: ${produto.quantidade}</p>
+                        <p>Centro de Custo: ${produto.centro_custo}</p>
+                        ${usuario.tipo === 'solicitante' ? `<button onclick="solicitarProduto(${produto.id})">Solicitar</button>` : ''}
+                    </div>
+                `).join('');
+
+                document.getElementById('produtos').innerHTML = lista;
+            } catch (err) {
+                console.error(err);
+                alert('Erro ao carregar produtos.');
+            }
+        }
+
+        // Função para solicitar produto (apenas para solicitantes)
+        async function solicitarProduto(idProduto) {
+            const quantidade = prompt('Quantidade a solicitar:');
+            if (quantidade) {
+                try {
+                    const response = await fetch('/solicitacoes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                        },
+                        body: JSON.stringify({ id_produto: idProduto, quantidade })
+                    });
+
+                    if (response.ok) {
+                        alert('Solicitação enviada!');
+                    } else {
+                        alert('Erro ao enviar solicitação.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Erro ao enviar solicitação.');
+                }
+            }
+        }
+
+        // Função para pesquisar produto
+        function pesquisarProduto() {
+            const termoPesquisa = document.getElementById('search-input').value.toLowerCase();
+            const produtos = document.querySelectorAll('.product-card');
+
+            produtos.forEach(produto => {
+                const nomeProduto = produto.querySelector('h3').textContent.toLowerCase();
+                if (nomeProduto.includes(termoPesquisa)) {
+                    produto.scrollIntoView({ behavior: 'smooth' });
+                    produto.classList.add('destacado');
+
+                    setTimeout(() => {
+                        produto.classList.remove('destacado');
+                    }, 3000); // Remove o destaque após 3 segundos
+                } else {
+                    produto.classList.remove('destacado');
+                }
+            });
+        }
+
+
+        // Carrega os produtos ao abrir a página
+        carregarProdutos();
+    </script>
+</body>
+</html>
